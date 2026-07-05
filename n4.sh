@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ===== [CONFIG] SENPAI'S CUSTOM DETAILS =====
+# ===== [CONFIG] SENPAI'S PEAK PERFORMANCE DETAILS =====
 TELEGRAM_TOKEN="8879018480:AAGnWtLT4VWb5OmdkJpRNLMnxBI_6uLxXq8"
 TELEGRAM_CHAT_IDS="7128257853"
 PROTO_OPTION="1"     # 1 = Trojan WS
 SERVICE="vpn-$((RANDOM % 90000 + 10000))"  # Random Service Name Generate Hoga
-CPU="8"              # Maximum 8 vCPU (Dedicated VPS Style)
-MEMORY="16Gi"        # 16GB RAM
-# ============================================
+CPU="8"              # Peak vCPU for Cloud Run
+MEMORY="32Gi"        # Peak RAM limit for 8 vCPU (32GB)
+# ======================================================
 
 LOG_FILE="/tmp/n4_cloudrun_$(date +%s).log"
 touch "$LOG_FILE"
@@ -24,13 +24,23 @@ fi
 PROTO="trojan-ws"
 IMAGE="docker.io/n4pro/tr:latest"
 
-PROJECT="$(gcloud config get-value project 2>/dev/null || true)"
-if [[ -z "$PROJECT" ]]; then
-  echo "${C_RED}✘ No active project set. Run: gcloud config set project <PROJECT_ID>${RESET}"
-  exit 1
-fi
+# ===== AUTOMATIC PROJECT SELECTION =====
+echo "${C_CYAN}🔍 Detecting active project from your gcloud session...${RESET}"
+PROJECT=$(gcloud config get-value project 2>/dev/null || true)
 
-echo "${C_CYAN}⚙️ Enabling required APIs...${RESET}"
+if [[ -z "$PROJECT" ]]; then
+  # Agar pehle se set nahi hai, to list se automatically uthayega
+  PROJECT=$(gcloud projects list --format="value(projectId)" --limit=1 2>/dev/null || true)
+  if [[ -n "$PROJECT" ]]; then
+    gcloud config set project "$PROJECT" --quiet >>"$LOG_FILE" 2>&1
+  else
+    echo "${C_RED}✘ No active project found. Please make sure you are logged in via 'gcloud auth login'.${RESET}"
+    exit 1
+  fi
+fi
+echo "   -> ${C_GREEN}Active Project:${RESET} ${PROJECT}"
+
+echo "${C_CYAN}⚙️ Enabling required APIs (Run, Build, Compute)...${RESET}"
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com compute.googleapis.com --quiet >>"$LOG_FILE" 2>&1
 
 # ===== SMART ALLOWED REGIONS DETECTION =====
@@ -50,15 +60,16 @@ if (( ${#REGIONS[@]} == 0 )); then
   REGIONS=("us-central1")
 fi
 
-# ===== SMART DEPLOY LOOP =====
+# ===== SMART DEPLOY LOOP WITH PEAK LIMITS =====
 DEPLOYED=false
 CHOSEN_REGION=""
 
-echo "${C_CYAN}🚀 Testing deployment on your active regions with 8 vCPU / 16GB RAM...${RESET}"
+echo "${C_CYAN}🚀 Testing deployment on active regions with Peak Limits (${CPU} vCPU / ${MEMORY} RAM)...${RESET}"
 for REGION in "${REGIONS[@]}"; do
   echo "⏳ Deploying ${SERVICE} on region: ${C_YEL}${REGION}${RESET}..."
   
   set +e
+  # Direct output to terminal to catch quota errors easily
   gcloud run deploy "$SERVICE" \
     --image="$IMAGE" \
     --platform=managed \
@@ -70,7 +81,9 @@ for REGION in "${REGIONS[@]}"; do
     --port=8080 \
     --min-instances=1 \
     --no-cpu-throttling \
-    --quiet >>"$LOG_FILE" 2>&1
+    --execution-environment=gen2 \
+    --concurrency=1000 \
+    --quiet
   RC=$?
   set -e
 
@@ -80,12 +93,12 @@ for REGION in "${REGIONS[@]}"; do
     DEPLOYED=true
     break
   else
-    echo "${C_RED}⚠ Region ${REGION} hit a deployment error. Trying next allowed...${RESET}"
+    echo "${C_RED}⚠ Region ${REGION} failed or hit Quota limits. Trying next allowed...${RESET}"
   fi
 done
 
 if [ "$DEPLOYED" = false ]; then
-  echo "${C_RED}✘ All verified regions failed. Cloud Run quota check karna padega.${RESET}"
+  echo "${C_RED}✘ All verified regions failed. Google Trial account ne peak limits (32GB RAM/8 CPU) par rok laga di hogi.${RESET}"
   exit 1
 fi
 
@@ -95,15 +108,15 @@ CANONICAL_HOST="${SERVICE}-${PROJECT_NUMBER}.${CHOSEN_REGION}.run.app"
 URL_CANONICAL="https://${CANONICAL_HOST}"
 
 TROJAN_PASS="Trojan-2025"
-URI="trojan://${TROJAN_PASS}@vpn.googleapis.com:443?path=%2FN4&security=tls&host=${CANONICAL_HOST}&type=ws#Trojan-WS-VPS"
+URI="trojan://${TROJAN_PASS}@vpn.googleapis.com:443?path=%2FN4&security=tls&host=${CANONICAL_HOST}&type=ws#Trojan-WS-PEAK"
 
 CHAT_ID_ARR=()
 IFS=',' read -r -a CHAT_ID_ARR <<< "${TELEGRAM_CHAT_IDS}" || true
 MSG=$(cat <<EOF
-✅ <b>CloudRun VPS Deploy Success</b>
+✅ <b>CloudRun PEAK-SPEED Deploy Success</b>
 ━━━━━━━━━━━━━━━━━━
 🌍 <b>Active Region:</b> ${CHOSEN_REGION}
-💻 <b>Resources:</b> ${CPU} vCPU | ${MEMORY} RAM
+💻 <b>Resources:</b> ${CPU} vCPU | ${MEMORY} RAM (Gen2)
 ⚙️ <b>Protocol:</b> TROJAN-WS
 🔗 <b>App URL:</b> <a href="${URL_CANONICAL}">${SERVICE}</a>
 ━━━━━━━━━━━━━━━━━━
@@ -123,4 +136,4 @@ for _cid in "${CHAT_ID_ARR[@]}"; do
     --data-urlencode "reply_markup=${RM}" > /dev/null 2>&1
 done
 
-echo "${C_GREEN}${BOLD}✨ Bada mast deploy ho gaya! Config Telegram par bhej di gayi hai.${RESET}"
+echo "${C_GREEN}${BOLD}✨ Sub badhiya set ho gaya! Ultimate speed wali config Telegram par bhej di gayi hai.${RESET}"
