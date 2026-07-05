@@ -323,6 +323,7 @@ run_with_progress "Deploying ${SERVICE}" \
     --allow-unauthenticated \
     --port="$PORT" \
     --min-instances=1 \
+    --no-cpu-throttling
     --quiet
 
 # =================== Result ===================
