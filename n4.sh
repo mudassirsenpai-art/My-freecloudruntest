@@ -93,10 +93,10 @@ for REGION in "${REGIONS[@]}"; do
     --allow-unauthenticated \
     --port=8080 \
     --min-instances=1 \
-    --max-instances=10 \
+    --max-instances=2 \
     --no-cpu-throttling \
     --execution-environment=gen2 \
-    --concurrency=100 \
+    --concurrency=300 \
     --quiet
   RC=$?
   set -e
