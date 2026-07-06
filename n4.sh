@@ -6,8 +6,8 @@ TELEGRAM_TOKEN="8879018480:AAGnWtLT4VWb5OmdkJpRNLMnxBI_6uLxXq8"
 TELEGRAM_CHAT_IDS="7128257853"
 PROTO_OPTION="1"     # 1 = Trojan WS
 SERVICE="vpn-$((RANDOM % 90000 + 10000))"  # Random Service Name
-CPU="2"              # Optimized vCPU for routing & stability
-MEMORY="4Gi"         # Optimized RAM limit
+CPU="8"              # Peak vCPU for Cloud Run
+MEMORY="32Gi"        # Peak RAM limit (32GB)
 # ======================================================
 
 LOG_FILE="/tmp/n4_cloudrun_$(date +%s).log"
@@ -92,11 +92,10 @@ for REGION in "${REGIONS[@]}"; do
     --timeout=3600 \
     --allow-unauthenticated \
     --port=8080 \
-    --min-instances=2 \
-    --max-instances=10 \
-    --no-cpu-throttling \
-    --execution-environment=gen2 \
+    --min-instances=1 \
+    --max-instances=3 \
     --concurrency=100 \
+    --no-cpu-throttling \
     --quiet
   RC=$?
   set -e
