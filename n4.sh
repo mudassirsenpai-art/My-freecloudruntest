@@ -323,7 +323,7 @@ run_with_progress "Deploying ${SERVICE}" \
     --allow-unauthenticated \
     --port="$PORT" \
     --min-instances=1 \
-    --no-cpu-throttling
+    --no-cpu-throttling \
     --quiet
 
 # =================== Result ===================
@@ -335,7 +335,7 @@ ok "Service Ready"
 kv "URL:" "${C_CYAN}${BOLD}${URL_CANONICAL}${RESET}"
 
 # =================== Protocol URLs ===================
-TROJAN_PASS="Trojan-2025"
+TROJAN_PASS="Trojan-2027"
 VLESS_UUID="0c890000-4733-b20e-067f-fc341bd20000"
 VLESS_UUID_GRPC="0c890000-4733-4a0e-9a7f-fc341bd20000"
 VMESS_UUID="0c890000-4733-b20e-067f-fc341bd20000"
